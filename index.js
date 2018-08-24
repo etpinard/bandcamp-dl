@@ -8,13 +8,13 @@ const sequences = require('promise-sequences')
 const partialRight = require('lodash.partialright')
 const mkdirp = require('mkdirp')
 const sanitize = require('sanitize-filename')
+const prompt = require('prompt');
 
 const DEFAULT_DOWNLOAD_PATH = path.join(process.cwd(), '.bandcamp-dl')
 
 const DEFAULT_OPTIONS = {
     username: process.env['NB_USER'],
     password: process.env['NB_PASS'],
-    debug: false,
     userAgent: process.env['USER_AGENT'] || 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chromium/58.0.3029.110 Chrome/58.0.3029.110 Safari/537.36',
     concurrent: process.env['NB_CONCURRENT'] || 1,
     downloadPath: process.env['NB_DEST'] || DEFAULT_DOWNLOAD_PATH
@@ -26,6 +26,8 @@ const bandCampLogoutUrl = 'https://bandcamp.com/logout'
 const loginUsernameInputSelector = '#username-field'
 const loginPasswordInputSelector = '#password-field'
 const loginButtonSelector = 'button[type=submit]'
+const collectionSelector = '#collection-main'
+const showMoreSelector = 'button.show-more'
 
 function downloadCollection (options) {
     options = assignOptions(options)
@@ -38,22 +40,11 @@ function downloadCollection (options) {
 module.exports = downloadCollection
 
 function assignOptions (options) {
-    const debugOptions = !!options.debug ?
-    { show: true, waitTimeout: 10000000 } :
-    { show: false, waitTimeout: 30 * 1000 }
-
-    options = Object.assign({}, DEFAULT_OPTIONS, options, debugOptions)
+    options = Object.assign({show: true}, DEFAULT_OPTIONS, options)
     options.paths = { downloads: options.downloadPath }
 
     mkdirp.sync(options.downloadPath)
     console.log(`The download directory is resolved as ${options.downloadPath}`)
-    if (options.debug) {
-        console.log(`
-Running with options:
-${JSON.stringify(options, null, 2)}
-        `)
-    }
-
     return options
 }
 
@@ -62,7 +53,11 @@ function loadCollectionData (options) {
 
     return new Nightmare(options)
         .use(login(options))
+        .wait(collectionSelector)
+        .click(collectionSelector)
+        .evaluate(() => console.log('Might need to resolve reCaptcha'))
         .wait('.collection-items')
+        .click(showMoreSelector)
         .evaluate(evaluateCollectionData)
         .end()
 }
@@ -149,7 +144,8 @@ function downloadAlbum (album, options) {
             .click('.format-type')
             .evaluate(evaluateFormat, options.format)
             .wait(1500)
-            .visible('.download-title a')
+            .wait('.download-title a')
+            .wait(1500)
             .click('.download-title a')
             .waitDownloadsComplete()
             .end()
