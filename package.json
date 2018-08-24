@@ -12,6 +12,7 @@
     "nightmare-download-manager": "0.2.4",
     "opener": "1.4.3",
     "promise-sequences": "0.0.3",
+    "prompt": "^1.0.0",
     "sanitize-filename": "1.6.1"
   },
   "keywords": [
